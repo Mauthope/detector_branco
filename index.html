@@ -36,7 +36,7 @@
         .detectar-area {
             max-width: 100%;
             position: absolute;
-            border: 2px solid yellow; /* Borda amarela na área de detecção */
+            border: 2px solid yellow;
         }
         p {
             font-size: 1.2em;
@@ -101,6 +101,7 @@
             const frame = ctx.getImageData(x, y, larguraDetecao, alturaDetecao).data;
 
             let encontrouBranco = false;
+            let contagemBrancos = 0;
 
             for (let i = 0; i < frame.length; i += 4) {
                 const r = frame[i];
@@ -109,9 +110,15 @@
 
                 // Considera branco se R, G e B forem altos e similares
                 if (r > 200 && g > 200 && b > 200 && Math.abs(r - g) < 20 && Math.abs(r - b) < 20 && Math.abs(g - b) < 20) {
-                    encontrouBranco = true;
-                    break;
+                    contagemBrancos++;
                 }
+            }
+
+            // Define o critério de área mínima: 10% da área de detecção
+            const areaMinima = larguraDetecao * alturaDetecao * 0.1;
+
+            if (contagemBrancos > areaMinima) {
+                encontrouBranco = true;
             }
 
             if (encontrouBranco && !detectouAnteriormente && podeContar) {
