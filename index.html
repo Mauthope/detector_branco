@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detecção de Cor Branca</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        #video {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .detectar-area {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 37.8px; /* 1cm in pixels */
+            border: 2px solid yellow;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detecção de Cor Branca</h1>
+    <h1>Contagem de Peças: <span id="contador">0</span></h1>
+    <div id="video-container">
+        <video id="video" autoplay playsinline></video>
+        <div id="detectar-area" class="detectar-area"></div>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const detectarArea = document.getElementById('detectar-area');
+        const contadorElemento = document.getElementById('contador');
+        let contador = 0;
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('Erro ao acessar a câmera:', err);
+            });
+
+
+        function detectarBranco() {
+            const videoContainer = document.getElementById('video-container');
+            const containerRect = videoContainer.getBoundingClientRect();
+            const larguraDetecao = containerRect.width;
+            const alturaDetecao = 37.8; // 1 cm em pixels (~37.8px)
+
+            // Atualiza o tamanho do canvas para o tamanho do vídeo
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Desenha o vídeo no canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Calcula a escala entre o tamanho real do vídeo e o tamanho exibido
+            const escalaX = video.videoWidth / containerRect.width;
+            const escalaY = video.videoHeight / containerRect.height;
+
+            // Coordenadas da área de detecção
+            const x = 0;
+            const y = (canvas.height / 2) - (alturaDetecao * escalaY / 2);
+
+            // Atualiza o estilo da área de detecção no DOM
+            detectarArea.style.top = `${containerRect.height / 2 - alturaDetecao / 2}px`;
+
+            // Captura os dados da área do canvas correspondente à área de detecção
+            const frame = ctx.getImageData(x, y, canvas.width, Math.ceil(alturaDetecao * escalaY)).data;
+
+            let brancoCount = 0;
+            for (let i = 0; i < frame.length; i += 4) {
+                const r = frame[i];
+                const g = frame[i + 1];
+                const b = frame[i + 2];
+                const a = frame[i + 3];
+
+                if (r > 200 && g > 200 && b > 200 && a > 0) {
+                    brancoCount++;
+                }
+            }
+
+            const threshold = 1000; // Ajuste este valor conforme necessário
+            if (brancoCount > threshold) {
+                contador++;
+                contadorElemento.textContent = contador;
+            }
+        }
+
+        setInterval(detectarBranco, 100); // Ajuste a frequência conforme necessário
+
+    </script>
+</body>
+</html>
+
